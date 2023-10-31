@@ -19,14 +19,14 @@ else
 exit
 fi
 #Must run from LIVE vm.
-#Firstly take backup of database manually from preview2.valuelinksoftware.com/wp-admin and download it to the LIVE VM. Name it preview2.valuelinksoftware.com-1-5.sql
+#Firstly take backup of database manually from STAGINSITE/wp-admin and download it to the LIVE VM. Name it STAGINGSITE.sql
 sleep 2
 echo "Setting the current subscription in Azure..."
 sleep 3
-az account set --subscription 2fcff86b-671b-41d2-bba7-4c7ebbbe0c08 
-#Sets up the current subscription and creates a new Database in Azure namely valuelinksoftwarecom-1-5
+az account set --subscription SUBSCRIPTIONID 
+#Sets up the current subscription and creates a new Database in Azure namely PRODSITE-1-5
 subscription=$(az account show)
-echo "Your subscription has been set to Xoopahoutlook.onmicrosoft.com "
+echo "Your subscription has been set to PRODSITE "
 sleep 4
 echo "Your subscription details are $subscription "
 sleep 4
@@ -35,13 +35,13 @@ sleep 2
 #Make sure you have AZ CLI installed
 
 read -p "Enter the name of Database: " nameofdatabase
-az mysql flexible-server db create --resource-group XPSITES-EUS-RG --server-name xpsites-eus-mysql-server --collation utf8_general_ci --charset utf8 --database-name $nameofdatabase
+az mysql flexible-server db create --resource-group RGNAME --server-name SERVERNAME --collation utf8_general_ci --charset utf8 --database-name $nameofdatabase
 #Creating latest DB in azure
 echo " $nameofdatabase Created!"
 sleep 2
 echo "Connecting to Staging Virtual Machine and Zipping the latest Package..."
 sleep 4
-ssh vlwpuser@168.61.34.76 "cd /var/www/preview2.valuelinksoftware.com ; tar -cvf /tmp/preview2.valuelinksoftware.com.tar.gz *"
+ssh USER@1.2.3.4 "cd /var/www/STAGINGSITE ; tar -cvf /tmp/STAGINGSITE.tar.gz *"
 
 
 #connecting to preview and visiting latest changes directory and zipping the contents with latest changes
@@ -49,13 +49,13 @@ echo "Package successfully Zipped!"
 sleep 2
 echo "Copying the latest zipped package from Staging to Current LIVE VM at /tmp Directory..."
 sleep 4
-scp vlwpuser@168.61.34.76:/tmp/preview2.valuelinksoftware.com.tar.gz /tmp  
+scp USER@1.2.3.4:/tmp/STAGINGSITE.tar.gz /tmp  
 #transfering this zip file which has contents of new site to the LIVE VM using SCP command into /tmp folder
 echo "Package succesfully copied!"
 sleep 3
 echo "Copying the latest MySQL dump from Staging to Current LIVE VM at /tmp Directory..."
 sleep 4
-scp vlwpuser@168.61.34.76:/tmp/preview2.valuelinksoftware.com-1-5.sql /tmp 
+scp USER@1.2.3.4:/tmp/STATINGSITE-1-5.sql /tmp 
 #transfering the backup of database also to the LIVE VM into /tmp folder
 echo "Database successfully copied!"
 sleep 2
@@ -76,7 +76,7 @@ echo "Persmissions granted!"
 sleep 2
 echo "Going to the /tmp Directory and Extracting the latest staging package to latest working directory..."
 sleep 5
-cd /tmp && sudo tar -xvf preview2.valuelinksoftware.com.tar.gz -C /var/www/$version
+cd /tmp && sudo tar -xvf STAGINGSITE -C /var/www/$version
 #this step extracts the downloaded tar to the actual working directory of site
 echo "Package succesfully extracted!"
 sleep 2
@@ -84,13 +84,13 @@ echo "Dumping the latest Database into $nameofdatabase ..."
 sleep 3
 
 cd /tmp
-sudo mysql -u xpsitesdbadmin -h xpsites-eus-mysql-server.mysql.database.azure.com -ptExeMKWry1hhNCZ $nameofdatabase < preview2.valuelinksoftware.com-1-5.sql
+sudo mysql -u USERNAME -h SERVERNAMEORIP -pPASSWORD $nameofdatabase < STAGINGSITE-1-5.sql
 echo "Succesfully exported the latest staging database to $nameofdatabase"
 #Here you are dumping the downloaded database into the new one you created on Azure 
 sleep 3
 echo "Copying wp-config.php from previously working directory to latest directory..."
 sleep 3
-sudo cp -a /var/www/valuelinksoftware.com-1-4/wp-config.php /var/www/$version
+sudo cp -a /var/www/PRODSITE-1-4/wp-config.php /var/www/$version
 
 #Copying wp-config.php from old version to new, with same permissions, so you would only have to change the DB Name
 
@@ -99,7 +99,7 @@ sleep 2
 echo "Editing the wp-config.php and changing the Database name into $nameofdatabase ..."
 sleep 3
 
-sudo sed -i "s/valuelinksoftwarecom-1-4/$nameofdatabase/" /var/www/$version/wp-config.php 
+sudo sed -i "s/PRODSITE-1-4/$nameofdatabase/" /var/www/$version/wp-config.php 
 #Now Editing wp-config.php and CHANGING THE DATABASE NAME TO THE ONE CREATED ON AZURE
 
 echo "Database named successfully changed to $nameofdatabase into $version wp-config.php"
@@ -108,14 +108,14 @@ sleep 2
 echo "Creating a new NGINX configuration directory and copying previous content into it..."
 sleep 2
 cd /etc/nginx/sites-available
-sudo cp -a valuelinksoftware.com-1-4 $version
+sudo cp -a PRODSITE-1-4 $version
 
 echo "Latest directory in sites-available created with the name $version !"
 sleep 2
 echo "Changing the root name from previous to latest NGINX configuration file..."
 sleep 3
 cd /etc/nginx/sites-available/
-sudo sed -i "s/valuelinksoftware.com-1-4/$version/" /etc/nginx/sites-available/$version
+sudo sed -i "s/PRODSITE-1-4/$version/" /etc/nginx/sites-available/$version
 
 #Changing the root directory to the latest from 1-4 to 1-5 in valuelinksoftware.com-1-5 which is eq to $version variable.
 
@@ -123,7 +123,7 @@ sudo sed -i "s/valuelinksoftware.com-1-4/$version/" /etc/nginx/sites-available/$
 echo "Breaking the current link and creating new Symbolic link with $version ..."
 sleep 4
 
-cd /etc/nginx/sites-enabled && sudo unlink valuelinksoftware.com-1-4
+cd /etc/nginx/sites-enabled && sudo unlink PRODSITE-1-4
 sudo ln -s /etc/nginx/sites-available/$version /etc/nginx/sites-enabled/ #unlike the current symbolic link and create new one
 #Breaking old symbolic link and creating new one
 echo "Link created!"
