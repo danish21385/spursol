@@ -1,0 +1,106 @@
+This document lists the steps which need to be taken to copy PRODSITE.com website from preview to live.
+
+STEP 1: Take a backup of the database from STAGINGSITE
+
+a) Login to STAGINGSITE/wp-admin
+Go to plugins > wp-migrate (Enable the plugin if it is not activated.) 
+Click on export database, replace the URL and path with live domain URL and path then click export database
+Extract the downloaded database
+Rename the database with specific version number e.g.  STAGINGSITE-1-1.sql
+
+b) Compress the contents in staging site directory
+SSH in to STAGINGSITE VM
+cd /var/www/STAGINGSITE
+Tar –czf STAGINGSITE.tar.gz *
+
+c) Download STAGINGSITE-1-1.tar.gz
+Connect to the VM with ftp client e.g., filezilla
+Navigate to /var/www/STAGINGSITE
+Download the tar.gz file to your local machine, 
+rename the tar.gz file with an incremental version number e.g.  STAGINGSITE-1-1.tar.gz
+
+2) Create a new Database in Azure 
+Log in to Azure and switch to PRODSUBSCRIPTION then
+navigate to Azure Database for MySQL servers > xpsites-eus-mysql-server > Databases, click Add.
+Create a new database with an incremental version number e.g., PRODSITE-1-1
+
+3) Upload the database to PRODSITE.com server
+Login to live PRODSITE Linux vm using FTP Client e.g., FileZilla
+Navigate to /tmp directory
+Upload database downloaded in step 1a to /tmp directory         
+Once the upload is completed, use the following command to import the database, you should be in /tmp
+Directory.
+sudo mysql -u USERNAME -h HOSTNAME -p  
+PRODSITE-1-1 < STAGINGSITE-1.1
+
+4) Create a copy of the PRODSITE.com root folder and give an incremental version number
+  SSH in to PRODSITE.com vm
+ cd /var/www/
+mkdir PRODSITE.com-1-1
+Sudo chmod 777 PRODSITE.com-1-1 -R
+
+
+4) Upload and extract STAGINGSITE.tar.gz on the live server
+Login to live PRODSITE Linux vm using FTP Client e.g., FileZilla
+Navigate to /var/www/PRODSITE.com-1-1 directory
+Upload the STAGINGSITE-1-1.tar.gz file downloaded in step 1c to the above-mentioned directory
+
+
+5) Extract STAGINGSITE.tar.gz
+SSH into the virtual machine
+Cd /var/www/PRODSITE.com-1-1
+Sudo tar xvf STAGINGSITE-1-1.tar.gz
+Cd ..
+Sudo chown www-data:www-data PRODSITE.com-1-1 -R
+Sudo chmod 755 PRODSITE.com-1-1 -R
+
+6) Edit wp-config to reflect the new database name
+ cd /var/www/PRODSITE.com-1.1
+ sudo nano wp-config.php
+ Change the username, database and database hostname as follows
+ Db name: <name of the database created in step 2>
+ U: USERNAME
+ Host HOSTNAME
+ P: use the production mysql server password.
+ Save and exit
+
+7) Make a copy of the current configuration with the same version number as that of the site root folder
+ cd /etc/nginx/sites-available
+ Sudo cp -a PRODSITE.com-1.0 PRODSITE.com-1.1
+
+8) Change the root directory in the website configuration file
+Sudo nano /etc/nginx/sites-available/PRODSITE.com-1.1
+Change root to /var/www/PRODSITE.com-1.1;
+Save and exit
+
+9) Create symbolic links
+cd /etc/nginx/sites-enabled
+Run ls to list the symbolic links
+remove the current symbolic link (this will disable the current published website)
+Sudo rm <symbolic link path> e.g., sudo rm /etc/nginx/sites-available/PRODSITE.com 
+Run the following command to create a new symbolic link (this will publish the new site)
+sudo ln -s /etc/nginx/sites-available/PRODSITE.com-1.1 /etc/nginx/sites-enabled/
+
+
+10) Restart Nginx
+Sudo systemctl restart nginx
+
+11) Regenerate CSS
+Once the new site is live, login to wp-admin of the live site 
+https://PRODSITE.com/wp-admin
+Go to elementor > tools > regenrate css
+Go to elementor > tools > sync
+
+
+
+
+
+
+
+       
+
+
+
+
+
+
