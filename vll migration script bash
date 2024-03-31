@@ -3,7 +3,7 @@
 
 #Note:- regenerate css before taking db backup from preview
 
-echo "This script will push the latest changes from preview2.valuelinksoftware.com to valuelinksoftware.com"
+echo "This script will push the latest changes from preview to live"
 sleep 3
 echo "Beginning..."
 sleep 2
